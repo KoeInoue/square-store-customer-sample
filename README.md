@@ -6,7 +6,7 @@
 
 ### set your .env
 copy application ID, location ID and Access Token from Square Developer Dash board.  
-And paste these value to Env file and on top of client/square.js  
+And paste these value to .env file and on top of client/square.js  
 
 #### To register card
 access http://localhost:3000

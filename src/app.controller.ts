@@ -10,6 +10,11 @@ export class AppController {
     return this.appService.storeCustomer(request);
   }
 
+  @Get('/list-customer')
+  listCustomer() {
+    return this.appService.listCustomer();
+  }
+
   @Get('/payments')
   payment() {
     return this.appService.payment();

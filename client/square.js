@@ -1,7 +1,7 @@
 // TODO Your application ID
-const appId = 'xxx';
+const appId = '';
 // TODO your location ID
-const locationId = 'xxx';
+const locationId = '';
 // TODO Style for Card Form
 const darkModeCardStyle = {
   '.input-container': {
@@ -59,6 +59,14 @@ async function sendSourceId(token) {
   const bodyParameters = {
     locationId,
     sourceId: token,
+    familyName: document.getElementById('familyName').value,
+    givenName: document.getElementById('givenName').value,
+    companyName: document.getElementById('companyName').value,
+    phoneNumber: document.getElementById('phoneNumber').value,
+    addressLine1: document.getElementById('addressLine1').value,
+    addressLine2: document.getElementById('addressLine2').value,
+    addressLine3: document.getElementById('addressLine3').value,
+    emailAddress: document.getElementById('emailAddress').value,
   };
 
   const body = JSON.stringify(bodyParameters);
@@ -143,6 +151,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
       displayPaymentResults('SUCCESS');
       console.debug('Payment Success', paymentResults);
+      cardButton.disabled = false;
     } catch (e) {
       cardButton.disabled = false;
       displayPaymentResults('FAILURE');

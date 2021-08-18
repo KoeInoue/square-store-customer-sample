@@ -8,57 +8,65 @@ import {
   CreateCustomerRequest,
   Address,
   ApiError,
-  CreateCustomerCardRequest,
   CreatePaymentRequest,
   Money,
-  CustomersApi,
-  PaymentsApi,
+  CreateCardRequest,
+  Card,
 } from 'square';
 
 @Injectable()
 export class AppService {
-  private readonly client: Client = new Client({
-    environment: Environment.Sandbox,
-    accessToken: process.env.SQUARE_ACCESS_TOKEN,
-  });
+  getClient() {
+    return new Client({
+      environment: Environment.Sandbox,
+      accessToken: process.env.SQUARE_ACCESS_TOKEN,
+    });
+  }
 
-  // To call Customer API
-  private readonly customersApi: CustomersApi = this.client.customersApi;
-  // To call Payment API
-  private readonly paymentsApi: PaymentsApi = this.client.paymentsApi;
+  async listCustomer() {
+    const client = this.getClient();
+    try {
+      const { result, ...httpResponse } =
+        await client.customersApi.listCustomers();
+      // Get more response info...
+      const { statusCode, headers } = httpResponse;
+      console.log(...result.customers);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        const errors = error.result;
+        console.log(errors);
+        // const { statusCode, headers } = error;
+      }
+    }
+  }
 
   // To Store a Customer in Square
   async storeCustomer(request) {
+    const client = this.getClient();
     // TODO authenticate the customer to get acutual customer's data.
 
     // TODO replace the code that is hard coded below
     const bodyAddress: Address = {};
-    bodyAddress.addressLine1 = '500 Electric Ave';
-    bodyAddress.addressLine2 = 'Suite 600';
-    bodyAddress.addressLine3 = 'address_line_38';
-    bodyAddress.locality = 'New York';
-    bodyAddress.sublocality = 'sublocality2';
-    bodyAddress.administrativeDistrictLevel1 = 'NY';
-    bodyAddress.postalCode = '10003';
-    bodyAddress.country = 'US';
+    bodyAddress.addressLine1 = request.addressLine1;
+    bodyAddress.addressLine2 = request.addressLine2;
+    bodyAddress.addressLine3 = request.addressLine3;
+    bodyAddress.country = 'JP';
 
     // TODO replace the code that is hard coded below
     const body: CreateCustomerRequest = {};
-    body.idempotencyKey = 'idempotency_key2';
-    body.givenName = 'Amelia';
-    body.familyName = 'Earhart';
-    body.companyName = 'company_name2';
-    body.nickname = 'nickname2';
-    body.emailAddress = 'Amelia.Earhart@example.com';
+    body.idempotencyKey = uuidv4();
+    body.givenName = request.givenName;
+    body.familyName = request.familyName;
+    body.companyName = request.companyName;
+    body.emailAddress = request.emailAddress;
     body.address = bodyAddress;
-    body.phoneNumber = '1-212-555-4240';
-    body.referenceId = 'YOUR_REFERENCE_ID';
-    body.note = 'a customer';
+    body.phoneNumber = request.phoneNumber;
+    body.note = `${request.companyName} ${request.familyName}様`;
 
     try {
       // Call Create Customer API to create customer data to Square
       const { result, ...httpResponse } =
-        await this.customersApi.createCustomer(body);
+        await client.customersApi.createCustomer(body);
       // Get more response info...
       const { statusCode, headers } = httpResponse;
       console.log(result, statusCode, headers);
@@ -76,30 +84,35 @@ export class AppService {
 
   // To Store a Customer's Card in Square
   async storeCard(sourceId, customerId) {
-    // sourceID is sent from Frontend
-    const body: CreateCustomerCardRequest = {
-      cardNonce: sourceId,
+    const client = this.getClient();
+    const bodyCard: Card = {};
+    bodyCard.customerId = customerId;
+    const body: CreateCardRequest = {
+      idempotencyKey: uuidv4(),
+      sourceId,
+      card: bodyCard,
     };
 
     try {
-      const { result, ...httpResponse } =
-        await this.customersApi.createCustomerCard(customerId, body);
+      const { result, ...httpResponse } = await client.cardsApi.createCard(
+        body,
+      );
+      console.log(result);
+
       // Get more response info...
-      const { statusCode, headers } = httpResponse;
-      console.log(result, statusCode, headers);
-      return result.card.id;
+      // const { statusCode, headers } = httpResponse;
     } catch (error) {
       if (error instanceof ApiError) {
-        // const errors = error.result;
-        const { statusCode, headers } = error;
-        console.log(statusCode, headers);
-        // TODO send error message to Slack or something
+        const errors = error.result;
+        console.log(errors);
+        // const { statusCode, headers } = error;
       }
     }
   }
 
   // execute payment
   async payment() {
+    const client = this.getClient();
     // TODO get Customer ID from DB.
     const customerId = 'xxx';
     // TODO get Customer's Card ID by calling Retrive Card API
@@ -120,9 +133,8 @@ export class AppService {
     body.note = 'Brief description';
 
     try {
-      const { result, ...httpResponse } = await this.paymentsApi.createPayment(
-        body,
-      );
+      const { result, ...httpResponse } =
+        await client.paymentsApi.createPayment(body);
       // Get more response info...
       const { statusCode, headers } = httpResponse;
       console.log(result, statusCode, headers);
